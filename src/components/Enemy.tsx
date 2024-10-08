@@ -12,7 +12,7 @@ const Enemy: React.FC<EnemyProps> = ({ x, y }) => {
       style={{
         left: `${x}%`,
         top: `${y}%`,
-        transform: 'translate(-50%, -50%) rotate(90deg)',
+        transform: 'translate(-50%, -50%) rotate(180deg)',
         clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
       }}
     />
