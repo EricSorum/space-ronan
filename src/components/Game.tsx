@@ -19,9 +19,11 @@ const Game: React.FC = () => {
   const [playerPosition, setPlayerPosition] = useState({ x: 50, y: 75 });
   const [enemies, setEnemies] = useState<EnemyType[]>([]);
   const [bullets, setBullets] = useState<BulletType[]>([]);
+  const [score, setScore] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
 
-  // Handle player movement and shooting
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (gameOver) return;
     const speed = 5;
     switch (e.key) {
       case 'ArrowUp':
@@ -44,13 +46,12 @@ const Game: React.FC = () => {
       case '6':
         setPlayerPosition(prev => ({ ...prev, x: Math.min(95, prev.x + speed) }));
         break;
-      case ' ': // Spacebar for shooting
+      case ' ':
         setBullets(prev => [...prev, { id: Date.now(), x: playerPosition.x, y: playerPosition.y }]);
         break;
     }
-  }, [playerPosition]);
+  }, [playerPosition, gameOver]);
 
-  // Set up event listener for keyboard input
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => {
@@ -58,17 +59,8 @@ const Game: React.FC = () => {
     };
   }, [handleKeyDown]);
 
-  // Scroll the background
-  // useEffect(() => {
-  //   const scrollInterval = setInterval(() => {
-  //     setScrollPosition(prev => (prev + 1) % 200);
-  //   }, 50);
-
-  //   return () => clearInterval(scrollInterval);
-  // }, []);
-
-  // Spawn enemies
   useEffect(() => {
+    if (gameOver) return;
     const spawnInterval = setInterval(() => {
       const newEnemy: EnemyType = {
         id: Date.now(),
@@ -79,10 +71,10 @@ const Game: React.FC = () => {
     }, 2000);
 
     return () => clearInterval(spawnInterval);
-  }, []);
+  }, [gameOver]);
 
-  // Move enemies and bullets
   useEffect(() => {
+    if (gameOver) return;
     const moveInterval = setInterval(() => {
       setEnemies(prev => prev.map(enemy => ({
         ...enemy,
@@ -96,11 +88,41 @@ const Game: React.FC = () => {
     }, 50);
 
     return () => clearInterval(moveInterval);
-  }, []);
+  }, [gameOver]);
+
+  // Collision detection
+  useEffect(() => {
+    if (gameOver) return;
+
+    // Check for bullet-enemy collisions
+    bullets.forEach(bullet => {
+      enemies.forEach(enemy => {
+        if (Math.abs(bullet.x - enemy.x) < 5 && Math.abs(bullet.y - enemy.y) < 5) {
+          setEnemies(prev => prev.filter(e => e.id !== enemy.id));
+          setBullets(prev => prev.filter(b => b.id !== bullet.id));
+          setScore(prev => prev + 10);
+        }
+      });
+    });
+
+    // Check for player-enemy collisions
+    enemies.forEach(enemy => {
+      if (Math.abs(playerPosition.x - enemy.x) < 5 && Math.abs(playerPosition.y - enemy.y) < 5) {
+        setGameOver(true);
+      }
+    });
+  }, [bullets, enemies, playerPosition, gameOver]);
+
+  const restartGame = () => {
+    setPlayerPosition({ x: 50, y: 75 });
+    setEnemies([]);
+    setBullets([]);
+    setScore(0);
+    setGameOver(false);
+  };
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-gray-900">
-      {/* Background grid */}
       <div
         className="absolute w-full h-[400%] top-0 left-0 animate-scroll"
         style={{
@@ -108,27 +130,34 @@ const Game: React.FC = () => {
           backgroundSize: '50px 50px',
         }}
       />
-      {/* Player */}
       <Player x={playerPosition.x} y={playerPosition.y} />
       
-      {/* Enemies */}
       {enemies.map(enemy => (
         <Enemy key={enemy.id} x={enemy.x} y={enemy.y} />
       ))}
 
-      {/* Bullets */}
       {bullets.map(bullet => (
         <Bullet key={bullet.id} x={bullet.x} y={bullet.y} />
       ))}
       
-      {/* Debug information */}
       <div className="absolute top-4 left-4 text-white text-xl">
-        Player Position: x={playerPosition.x.toFixed(2)}, y={playerPosition.y.toFixed(2)}
-        <br />
-        Bullets: {bullets.length}
-        <br />
-        Enemies: {enemies.length}
+        Score: {score}
       </div>
+
+      {gameOver && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
+          <div className="text-white text-center">
+            <h2 className="text-4xl mb-4">Game Over</h2>
+            <p className="text-2xl mb-4">Your Score: {score}</p>
+            <button 
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              onClick={restartGame}
+            >
+              Restart
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
