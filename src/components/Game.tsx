@@ -7,6 +7,8 @@ interface EnemyType {
   id: number;
   x: number;
   y: number;
+  dx: number; // horizontal speed
+  dy: number; // vertical speed
 }
 
 interface BulletType {
@@ -58,28 +60,54 @@ const Game: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [handleKeyDown]);
+  const spawnVFormation = useCallback(() => {
+    const centerX = Math.random() * 80 + 10; // Center of the V formation
+    const newEnemies: EnemyType[] = [];
+    for (let i = 0; i < 5; i++) {
+      newEnemies.push({
+        id: Date.now() + i,
+        x: centerX + (i - 2) * 5,
+        y: -10 - Math.abs(i - 2) * 5,
+        dx: 0,
+        dy: 0.5,
+      });
+    }
+    setEnemies(prev => [...prev, ...newEnemies]);
+  }, []);
+
+  const spawnDiagonalFormation = useCallback(() => {
+    const startX = Math.random() < 0.5 ? -10 : 110; // Start from left or right
+    const dx = startX < 0 ? 0.5 : -0.5; // Move right if starting from left, and vice versa
+    const newEnemies: EnemyType[] = [];
+    for (let i = 0; i < 5; i++) {
+      newEnemies.push({
+        id: Date.now() + i,
+        x: startX + (dx * i * 20), // Adjust x position to create diagonal
+        y: -10 - i * 10,
+        dx: dx,
+        dy: 0.3,
+      });
+    }
+    setEnemies(prev => [...prev, ...newEnemies]);
+  }, []);
 
   useEffect(() => {
     if (gameOver) return;
     const spawnInterval = setInterval(() => {
-      const newEnemy: EnemyType = {
-        id: Date.now(),
-        x: Math.random() * 100,
-        y: -10,
-      };
-      setEnemies(prev => [...prev, newEnemy]);
-    }, 2000);
+      Math.random() < 0.5 ? spawnVFormation() : spawnDiagonalFormation();
+    }, 3000);
 
     return () => clearInterval(spawnInterval);
-  }, [gameOver]);
+  }, [gameOver, spawnVFormation, spawnDiagonalFormation]);
 
   useEffect(() => {
     if (gameOver) return;
     const moveInterval = setInterval(() => {
       setEnemies(prev => prev.map(enemy => ({
         ...enemy,
-        y: enemy.y + 1,
-      })).filter(enemy => enemy.y < 110));
+        x: enemy.x + enemy.dx,
+        y: enemy.y + enemy.dy,
+      })).filter(enemy => enemy.y < 110 && enemy.x > -10 && enemy.x < 110));
 
       setBullets(prev => prev.map(bullet => ({
         ...bullet,
@@ -133,8 +161,12 @@ const Game: React.FC = () => {
       <Player x={playerPosition.x} y={playerPosition.y} />
       
       {enemies.map(enemy => (
-        <Enemy key={enemy.id} x={enemy.x} y={enemy.y} />
-      ))}
+  <Enemy 
+    key={enemy.id} 
+    x={enemy.x} 
+    y={enemy.y}     
+  />
+))}
 
       {bullets.map(bullet => (
         <Bullet key={bullet.id} x={bullet.x} y={bullet.y} />
