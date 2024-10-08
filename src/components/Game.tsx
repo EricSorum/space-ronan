@@ -29,7 +29,7 @@ const Game: React.FC = () => {
 
   const updateDifficulty = useCallback(() => {
     const elapsedTime = (Date.now() - gameStartTime) / 1000; // time in seconds
-    const newDifficulty = 1 + Math.floor(elapsedTime / 30) * 0.1; // Increase by 0.1 every 30 seconds
+    const newDifficulty = 1 + Math.floor(elapsedTime / 15) * 0.1; // Increase by 0.1 every 15 seconds
     setDifficulty(newDifficulty);
   }, [gameStartTime]);
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
