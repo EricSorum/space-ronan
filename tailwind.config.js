@@ -11,8 +11,8 @@ export default {
       },
       keyframes: {
         scroll: {
-          '0%': { transform: 'translateY(0)' },
-          '100%': { transform: 'translateY(-50%)' },
+          '0%': { transform: 'translateY(-50%)' },
+          '100%': { transform: 'translateY(0)' },
         }
       }
     },

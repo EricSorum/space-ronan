@@ -23,7 +23,15 @@ const Game: React.FC = () => {
   const [bullets, setBullets] = useState<BulletType[]>([]);
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
+  const [difficulty, setDifficulty] = useState(1);
+  const [lastSpawnTime, setLastSpawnTime] = useState(Date.now());
+  const [gameStartTime] = useState(Date.now());
 
+  const updateDifficulty = useCallback(() => {
+    const elapsedTime = (Date.now() - gameStartTime) / 1000; // time in seconds
+    const newDifficulty = 1 + Math.floor(elapsedTime / 30) * 0.1; // Increase by 0.1 every 30 seconds
+    setDifficulty(newDifficulty);
+  }, [gameStartTime]);
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (gameOver) return;
     const speed = 5;
@@ -60,6 +68,7 @@ const Game: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [handleKeyDown]);
+
   const spawnVFormation = useCallback(() => {
     const centerX = Math.random() * 80 + 10; // Center of the V formation
     const newEnemies: EnemyType[] = [];
@@ -69,54 +78,75 @@ const Game: React.FC = () => {
         x: centerX + (i - 2) * 5,
         y: -10 - Math.abs(i - 2) * 5,
         dx: 0,
-        dy: 0.5,
+        dy: 0.5 * difficulty,
       });
     }
     setEnemies(prev => [...prev, ...newEnemies]);
-  }, []);
+  }, [difficulty]);
 
   const spawnDiagonalFormation = useCallback(() => {
-    const startX = Math.random() < 0.5 ? -10 : 110; // Start from left or right
-    const dx = startX < 0 ? 0.5 : -0.5; // Move right if starting from left, and vice versa
+    const startFromRight = Math.random() < 0.5;
     const newEnemies: EnemyType[] = [];
     for (let i = 0; i < 5; i++) {
-      newEnemies.push({
+      const enemy: EnemyType = {
         id: Date.now() + i,
-        x: startX + (dx * i * 20), // Adjust x position to create diagonal
-        y: -10 - i * 10,
-        dx: dx,
-        dy: 0.3,
-      });
+        x: startFromRight ? 110 + i * 2 : -10 - i * 5,
+        y: -10 - i * 2,
+        dx: startFromRight ? -0.5 : 0.5,
+        dy: 0.3 * difficulty,
+      };
+      newEnemies.push(enemy);
     }
-    setEnemies(prev => [...prev, ...newEnemies]);
-  }, []);
+    
+    setEnemies(prev => {
+      const updated = [...prev, ...newEnemies];
+      return updated;
+    });
+  }, [difficulty]);
 
   useEffect(() => {
     if (gameOver) return;
+  
     const spawnInterval = setInterval(() => {
-      Math.random() < 0.5 ? spawnVFormation() : spawnDiagonalFormation();
-    }, 3000);
-
+      const currentTime = Date.now();
+      const timeSinceLastSpawn = currentTime - lastSpawnTime;
+      const baseSpawnInterval = 3000; // 3 seconds
+      const adjustedSpawnInterval = baseSpawnInterval / difficulty;
+  
+      if (timeSinceLastSpawn >= adjustedSpawnInterval) {
+        Math.random() < 0.5 ? spawnVFormation() : spawnDiagonalFormation();
+        setLastSpawnTime(currentTime);
+      }
+  
+      updateDifficulty();
+    }, 1000); // Check every second
+  
     return () => clearInterval(spawnInterval);
-  }, [gameOver, spawnVFormation, spawnDiagonalFormation]);
+  }, [gameOver, spawnVFormation, spawnDiagonalFormation, difficulty, lastSpawnTime, updateDifficulty]);
 
   useEffect(() => {
     if (gameOver) return;
     const moveInterval = setInterval(() => {
-      setEnemies(prev => prev.map(enemy => ({
-        ...enemy,
-        x: enemy.x + enemy.dx,
-        y: enemy.y + enemy.dy,
-      })).filter(enemy => enemy.y < 110 && enemy.x > -10 && enemy.x < 110));
-
+      setEnemies(prev => {
+        const movedEnemies = prev.map(enemy => {
+          const newX = enemy.x + enemy.dx * difficulty;
+          const newY = enemy.y + enemy.dy * difficulty;
+          return { ...enemy, x: newX, y: newY };
+        });
+        
+        return movedEnemies.filter(enemy => 
+          enemy.y < 110 && enemy.x > -20 && enemy.x < 120
+        );
+      });
+  
       setBullets(prev => prev.map(bullet => ({
         ...bullet,
         y: bullet.y - 2,
       })).filter(bullet => bullet.y > -10));
     }, 50);
-
+  
     return () => clearInterval(moveInterval);
-  }, [gameOver]);
+  }, [gameOver, difficulty]);
 
   // Collision detection
   useEffect(() => {
@@ -161,12 +191,12 @@ const Game: React.FC = () => {
       <Player x={playerPosition.x} y={playerPosition.y} />
       
       {enemies.map(enemy => (
-  <Enemy 
-    key={enemy.id} 
-    x={enemy.x} 
-    y={enemy.y}     
-  />
-))}
+        <Enemy 
+          key={enemy.id} 
+          x={enemy.x} 
+          y={enemy.y}     
+        />
+      ))}
 
       {bullets.map(bullet => (
         <Bullet key={bullet.id} x={bullet.x} y={bullet.y} />
@@ -174,6 +204,8 @@ const Game: React.FC = () => {
       
       <div className="absolute top-4 left-4 text-white text-xl">
         Score: {score}
+        <br />
+        Difficulty: {difficulty.toFixed(1)}        
       </div>
 
       {gameOver && (
