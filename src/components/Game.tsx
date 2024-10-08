@@ -1,8 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Player from './Player';
+import Enemy from './Enemy';
+
+interface EnemyType {
+  id: number;
+  x: number;
+  y: number;
+}
 
 const Game: React.FC = () => {
   const [playerPosition, setPlayerPosition] = useState({ x: 50, y: 75 });
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const [enemies, setEnemies] = useState<EnemyType[]>([]);
 
   // Handle player movement
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -38,7 +47,31 @@ const Game: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [handleKeyDown]);
+  // Spawn enemies
+  useEffect(() => {
+    const spawnInterval = setInterval(() => {
+      const newEnemy: EnemyType = {
+        id: Date.now(),
+        x: Math.random() * 100,
+        y: -10,
+      };
+      setEnemies(prev => [...prev, newEnemy]);
+    }, 2000);
 
+    return () => clearInterval(spawnInterval);
+  }, []);
+
+  // Move enemies
+  useEffect(() => {
+    const moveInterval = setInterval(() => {
+      setEnemies(prev => prev.map(enemy => ({
+        ...enemy,
+        y: enemy.y + 1,
+      })).filter(enemy => enemy.y < 110));
+    }, 50);
+
+    return () => clearInterval(moveInterval);
+  }, []);
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-gray-900"><h1>yoyoyo</h1>
       {/* Background grid */}
@@ -49,6 +82,9 @@ const Game: React.FC = () => {
           backgroundSize: '50px 50px',
         }}
       />
+      {enemies.map(enemy => (
+        <Enemy key={enemy.id} x={enemy.x} y={enemy.y} />
+      ))}      
       {/* Player */}
       <Player x={playerPosition.x} y={playerPosition.y} />
       

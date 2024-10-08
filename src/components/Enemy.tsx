@@ -1,22 +1,22 @@
 import React from 'react';
 
-interface PlayerProps {
+interface EnemyProps {
   x: number;
   y: number;
 }
 
-const Player: React.FC<PlayerProps> = ({ x, y }) => {
+const Enemy: React.FC<EnemyProps> = ({ x, y }) => {
   return (
     <div
-      className="absolute w-12 h-12 bg-blue-500"
+      className="absolute w-8 h-8 bg-red-500"
       style={{
         left: `${x}%`,
         top: `${y}%`,
-        transform: 'translate(-50%, -50%)',
+        transform: 'translate(-50%, -50%) rotate(90deg)',
         clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
       }}
     />
   );
 };
 
-export default Player;
+export default Enemy;
