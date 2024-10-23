@@ -31,10 +31,10 @@ const Game: React.FC = () => {
     const elapsedTime = (Date.now() - gameStartTime) / 1000; // time in seconds
     const newDifficulty = 1 + Math.floor(elapsedTime / 15) * 0.1; // Increase by 0.1 every 15 seconds
     setDifficulty(newDifficulty);
-  }, [gameStartTime]);
+  }, [gameStartTime]);     
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (gameOver) return;
-    const speed = 5;
+    const speed = 3;
     switch (e.key) {
       case 'ArrowUp':
       case 'w':
@@ -155,17 +155,18 @@ const Game: React.FC = () => {
     // Check for bullet-enemy collisions
     bullets.forEach(bullet => {
       enemies.forEach(enemy => {
-        if (Math.abs(bullet.x - enemy.x) < 5 && Math.abs(bullet.y - enemy.y) < 5) {
+        if (Math.abs(bullet.x - enemy.x) < 3 && Math.abs(bullet.y - enemy.y) < 3) {
           setEnemies(prev => prev.filter(e => e.id !== enemy.id));
           setBullets(prev => prev.filter(b => b.id !== bullet.id));
           setScore(prev => prev + 10);
+
         }
       });
     });
 
     // Check for player-enemy collisions
     enemies.forEach(enemy => {
-      if (Math.abs(playerPosition.x - enemy.x) < 5 && Math.abs(playerPosition.y - enemy.y) < 5) {
+      if (Math.abs(playerPosition.x - enemy.x) < 3 && Math.abs(playerPosition.y - enemy.y) < 3) {
         setGameOver(true);
       }
     });
@@ -203,7 +204,7 @@ const Game: React.FC = () => {
       ))}
       
       <div className="absolute top-4 left-4 text-white text-xl">
-        Score: {score}
+        Bounty: ${score}
         <br />
         Difficulty: {difficulty.toFixed(1)}        
       </div>
